@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eletromecânica 3D Masterclass - 60 Desafios Técnicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        industrial: {
+                            50: '#f4f6f8',
+                            100: '#e3e8ef',
+                            500: '#3b82f6',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                            accent: '#f59e0b',
+                            gold: '#d97706'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Cinzel:wght@600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        .font-cert { font-family: 'Cinzel', serif; }
+        canvas { display: block; width: 100%; height: 100%; outline: none; }
+        .drag-item { cursor: grab; user-select: none; }
+        .drag-item:active { cursor: grabbing; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printable-certificate, #printable-certificate * { visibility: visible; }
+            #printable-certificate {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-industrial-950 text-industrial-100 min-h-screen flex flex-col overflow-x-hidden select-none">
+
+    <!-- Reset Warning Modal (Click outside) -->
+    <div id="reset-warning-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-industrial-900 border border-amber-500/50 rounded-2xl p-6 max-w-md w-full text-center shadow-2xl">
+            <div class="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-xl font-bold font-tech text-amber-400 mb-2">Atenção: Reinício Detectado</h3>
+            <p class="text-slate-300 text-sm mb-6">Clicar fora da área restrita de jogo ativou a regra de segurança industrial: todo o progresso do simulador foi reiniciado!</p>
+            <button onclick="dismissResetModal()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg transition-all">
+                Entendido, Reiniciar
+            </button>
+        </div>
+    </div>
+
+    <!-- Lucky Cards Modal (3 Elimination Cargas) -->
+    <div id="lucky-cards-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-industrial-900 border border-amber-500/60 rounded-3xl p-6 max-w-2xl w-full text-center shadow-2xl">
+            <div class="mb-4">
+                <span class="px-3 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold font-tech rounded-full uppercase">Sorte Industrial</span>
+                <h3 class="text-2xl font-bold font-tech text-white mt-2">Escolha uma Carta da Sorte</h3>
+                <p class="text-slate-300 text-sm mt-1">Selecione 1 das 3 cartas abaixo para tentar eliminar alternativas incorretas!</p>
+            </div>
+
+            <!-- 3 Cards Container -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-8">
+                <button onclick="revealLuckyCard(1)" id="card-btn-1" class="group h-48 bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-amber-500/40 hover:border-amber-400 rounded-2xl flex flex-col items-center justify-center p-4 transition-all transform hover:-translate-y-2 hover:shadow-xl hover:shadow-amber-500/20">
+                    <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 group-hover:scale-110 flex items-center justify-center text-xl font-tech font-bold mb-2 transition-all">01</div>
+                    <span class="font-tech font-bold text-slate-300 text-sm">CARTA 01</span>
+                    <i class="fa-solid fa-gem text-amber-500/40 text-2xl mt-3"></i>
+                </button>
+                <button onclick="revealLuckyCard(2)" id="card-btn-2" class="group h-48 bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-amber-500/40 hover:border-amber-400 rounded-2xl flex flex-col items-center justify-center p-4 transition-all transform hover:-translate-y-2 hover:shadow-xl hover:shadow-amber-500/20">
+                    <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 group-hover:scale-110 flex items-center justify-center text-xl font-tech font-bold mb-2 transition-all">02</div>
+                    <span class="font-tech font-bold text-slate-300 text-sm">CARTA 02</span>
+                    <i class="fa-solid fa-bolt text-amber-500/40 text-2xl mt-3"></i>
+                </button>
+                <button onclick="revealLuckyCard(3)" id="card-btn-3" class="group h-48 bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-amber-500/40 hover:border-amber-400 rounded-2xl flex flex-col items-center justify-center p-4 transition-all transform hover:-translate-y-2 hover:shadow-xl hover:shadow-amber-500/20">
+                    <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 group-hover:scale-110 flex items-center justify-center text-xl font-tech font-bold mb-2 transition-all">03</div>
+                    <span class="font-tech font-bold text-slate-300 text-sm">CARTA 03</span>
+                    <i class="fa-solid fa-shield-halved text-amber-500/40 text-2xl mt-3"></i>
+                </button>
+            </div>
+
+            <!-- Card Result Area -->
+            <div id="card-result-box" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4 text-slate-200 text-sm"></div>
+
+            <button onclick="closeLuckyModal()" id="close-lucky-btn" class="hidden px-8 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-sm transition">
+                Retornar ao Exercício
+            </button>
+        </div>
+    </div>
+
+    <!-- Special Manual Help Modal (5 Helps available) -->
+    <div id="special-help-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-industrial-900 border border-blue-500/50 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold font-tech text-white">Consulta Técnica / Manual</h3>
+                    <p class="text-xs text-slate-400">Ajuda Especial Especializada (Restam <span id="help-modal-count" class="text-blue-400 font-bold">5</span> usos)</p>
+                </div>
+            </div>
+            <div id="special-help-text" class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-300 text-sm leading-relaxed mb-6">
+                <!-- Injected dynamically -->
+            </div>
+            <button onclick="closeSpecialHelpModal()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition">
+                Fechar Consulta
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Header -->
+    <header class="bg-industrial-900/90 border-b border-slate-800 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-tech text-xl shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-gears animate-spin" style="animation-duration: 12s;"></i>
+            </div>
+            <div>
+                <h1 class="font-tech font-bold text-lg tracking-wider text-white">ELETROMECÂNICA <span class="text-blue-500">3D</span></h1>
+                <p class="text-xs text-slate-400">Masterclass Industrial &bull; 60 Desafios</p>
+            </div>
+        </div>
+
+        <!-- Student Info Tag (Appears after login) -->
+        <div id="header-student-info" class="hidden md:flex items-center space-x-3 bg-slate-800/60 border border-slate-700/60 px-3.5 py-1.5 rounded-full text-xs">
+            <div class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                <i class="fa-solid fa-user-gear"></i>
+            </div>
+            <div>
+                <span id="header-student-name" class="font-bold text-slate-200 block max-w-[150px] truncate">Aluno</span>
+                <span id="header-student-class" class="text-slate-400 text-[10px] block">Turma --</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <!-- Lives Display -->
+            <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-full shadow-inner">
+                <span class="text-xs font-semibold uppercase text-slate-400 mr-1 hidden sm:inline">Vidas:</span>
+                <div id="lives-container" class="flex space-x-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Score / Progress -->
+            <div class="hidden lg:flex flex-col text-right">
+                <span class="text-xs text-slate-400 font-medium">Progresso Global</span>
+                <span id="header-progress" class="font-tech text-sm font-bold text-blue-400">0 / 60</span>
+            </div>
+
+            <button onclick="confirmRestart()" class="p-2 text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-800 rounded-lg border border-slate-700/50 transition" title="Reiniciar Jogo">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col lg:flex-row relative" id="game-main-area">
+        
+        <!-- Left Sidebar / Navigation & Help Panel -->
+        <aside class="w-full lg:w-80 bg-industrial-900/60 border-r border-slate-800/80 p-4 lg:p-6 flex flex-col justify-between">
+            <div class="space-y-6">
+                
+                <!-- Special Lifelines Panel (Sem qualquer referência ao Gemini) -->
+                <div id="lifelines-panel" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide flex items-center justify-between">
+                        <span>Recursos Especiais de Ajuda</span>
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                    </h3>
+                    
+                    <!-- 5 Special Manual Helps -->
+                    <button id="btn-use-special-help" onclick="useSpecialHelp()" class="w-full py-2.5 px-3 bg-blue-600/20 border border-blue-500/40 hover:bg-blue-600/30 text-blue-300 rounded-xl text-xs font-semibold flex items-center justify-between transition">
+                        <span class="flex items-center"><i class="fa-solid fa-book text-blue-400 mr-2"></i> Consulta ao Manual Técnico</span>
+                        <span id="badge-special-help-count" class="bg-blue-500 text-slate-950 font-tech font-bold px-2 py-0.5 rounded-full text-[10px]">5 / 5</span>
+                    </button>
+
+                    <!-- 3 Lucky Cards Elimination -->
+                    <button id="btn-use-lucky-cards" onclick="openLuckyModal()" class="w-full py-2.5 px-3 bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300 rounded-xl text-xs font-semibold flex items-center justify-between transition">
+                        <span class="flex items-center"><i class="fa-solid fa-cards text-amber-400 mr-2"></i> Cartas da Sorte (Eliminar)</span>
+                        <span id="badge-lucky-cards-count" class="bg-amber-500 text-slate-950 font-tech font-bold px-2 py-0.5 rounded-full text-[10px]">3 / 3</span>
+                    </button>
+                </div>
+
+                <!-- Module list -->
+                <div>
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Módulos do Curso</h2>
+                    <div id="module-list" class="space-y-2">
+                        <!-- Module list populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Stats card -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3 flex items-center justify-between">
+                        <span>Estatísticas do Aluno</span>
+                        <i class="fa-solid fa-chart-line text-blue-500"></i>
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Acertos Total:</span>
+                            <span id="stat-correct" class="font-tech font-bold text-emerald-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Erros Seguidos:</span>
+                            <span id="stat-streak-errors" class="font-tech font-bold text-rose-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Dificuldade Atual:</span>
+                            <span id="stat-difficulty" class="font-tech font-bold text-amber-400">Fácil</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Reminder Footer -->
+            <div class="mt-6 pt-4 border-t border-slate-800/80 text-xs text-slate-500 space-y-1">
+                <p><i class="fa-solid fa-shield text-blue-500 mr-1"></i> <strong>10 Vidas Globais:</strong> Perde 1 por erro.</p>
+                <p><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i> <strong>Aviso:</strong> Clicar fora zera o progresso.</p>
+            </div>
+        </aside>
+
+        <!-- Right / Central Exercise Stage -->
+        <section class="flex-1 flex flex-col p-4 lg:p-8 relative bg-gradient-to-b from-industrial-950 to-industrial-900">
+            
+            <!-- Screen 1: Mandatory Student Login / Registration -->
+            <div id="screen-login" class="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto py-8">
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-3xl shadow-2xl shadow-blue-500/40 mb-6 animate-pulse">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <h2 class="text-2xl lg:text-3xl font-tech font-bold text-white mb-2">Identificação do Aluno</h2>
+                <p class="text-slate-400 text-sm mb-6">Insira seus dados para registrar seu progresso no simulador e emitir seu Certificado de Desempenho ao final.</p>
+
+                <form onsubmit="handleRegistration(event)" class="w-full bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-2xl text-left space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Nome Completo *</label>
+                        <input type="text" id="input-student-name" required placeholder="Ex: Carlos Eduardo Silva" class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-white text-sm outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Turma / Módulo *</label>
+                        <input type="text" id="input-student-class" required placeholder="Ex: EM-2026/A - Eletromecânica" class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-white text-sm outline-none transition">
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-tech font-bold rounded-xl shadow-lg transition transform hover:-translate-y-0.5 mt-2">
+                        REGISTRAR E INICIAR <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Screen 2: Active Exercise Stage -->
+            <div id="screen-exercise" class="flex-1 flex flex-col hidden">
+                
+                <!-- Exercise Header Bar -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-900/80 border border-slate-800 rounded-2xl p-4 mb-6 backdrop-blur-sm gap-4">
+                    <div>
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span id="badge-module" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30">Módulo</span>
+                            <span id="badge-difficulty" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">Fácil</span>
+                            <span id="badge-type" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30">Múltipla Escolha</span>
+                        </div>
+                        <h3 id="exercise-title" class="text-lg font-bold text-white font-tech">Título do Exercício</h3>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block">Questão</span>
+                        <span id="exercise-counter" class="font-tech font-bold text-lg text-blue-400">1 / 60</span>
+                    </div>
+                </div>
+
+                <!-- Exercise Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
+                    
+                    <!-- Left/Main Question & Interaction Area -->
+                    <div id="interaction-panel" class="lg:col-span-7 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+                        <div>
+                            <p id="exercise-prompt" class="text-slate-200 text-base lg:text-lg mb-6 leading-relaxed">
+                                Pergunta descritiva do exercício técnico aqui...
+                            </p>
+
+                            <!-- Dynamic Interaction Container -->
+                            <div id="dynamic-interaction-container" class="space-y-4">
+                                <!-- Injected dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Action / Submit button container -->
+                        <div id="action-footer" class="mt-8 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                            <div id="feedback-msg" class="text-sm font-medium"></div>
+                            <button id="submit-answer-btn" onclick="checkAnswer()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg transition hidden">
+                                Confirmar Resposta <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right 3D Viewport or Pedagogical Hint Panel -->
+                    <div class="lg:col-span-5 flex flex-col gap-6">
+                        <!-- 3D Canvas Card -->
+                        <div id="viewport-card" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-72 lg:h-auto flex-1 relative shadow-2xl">
+                            <div class="bg-slate-900/90 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-400">
+                                <span class="flex items-center"><i class="fa-solid fa-cube text-blue-500 mr-2"></i> Simulação 3D Interativa</span>
+                                <span id="viewport-status" class="text-emerald-400 text-xs">Ativo</span>
+                            </div>
+                            <div id="canvas-container" class="flex-1 relative cursor-grab active:cursor-grabbing bg-slate-950">
+                                <!-- Three.js Canvas injected here -->
+                            </div>
+                            <div class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg text-xs text-slate-300 pointer-events-none">
+                                <i class="fa-solid fa-arrows-up-down-left-right mr-1"></i> Arraste para girar
+                            </div>
+                        </div>
+
+                        <!-- Pedagogical Hint Box (Appears after 2 consecutive errors) -->
+                        <div id="hint-box" class="bg-amber-950/30 border border-amber-500/40 rounded-2xl p-5 hidden transition-all animate-pulse">
+                            <div class="flex items-center space-x-2 text-amber-400 font-bold mb-2">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>Orientação Pedagógica (2º Erro Consecutivo)</span>
+                            </div>
+                            <p id="hint-text" class="text-amber-200/90 text-sm leading-relaxed">
+                                Dica explicativa detalhada sem entregar diretamente a resposta...
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Screen 3: Game Over Screen -->
+            <div id="screen-gameover" class="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto hidden py-12">
+                <div id="gameover-icon" class="w-24 h-24 rounded-3xl bg-rose-500/20 text-rose-500 border border-rose-500/40 flex items-center justify-center text-4xl mb-6 shadow-2xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h2 id="gameover-title" class="text-3xl font-tech font-bold text-white mb-2">Fim de Jogo</h2>
+                <p id="gameover-desc" class="text-slate-300 mb-8 leading-relaxed">
+                    Você esgotou suas 10 vidas em decorrência de erros acumulados. Revise os conceitos e tente novamente.
+                </p>
+                <button onclick="resetFullGame()" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-tech font-bold rounded-xl shadow-lg transition">
+                    Reiniciar Jornada <i class="fa-solid fa-rotate-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Screen 4: Certificate / Completion Screen -->
+            <div id="screen-victory" class="flex-1 flex flex-col items-center justify-center py-8 hidden">
+                
+                <!-- Printable Certificate Container -->
+                <div id="printable-certificate" class="w-full max-w-4xl bg-gradient-to-br from-slate-900 via-industrial-900 to-slate-950 border-4 border-amber-500/80 rounded-3xl p-8 lg:p-12 shadow-2xl relative overflow-hidden text-center">
+                    
+                    <!-- Decorative Certificate Frames -->
+                    <div class="absolute -top-12 -left-12 w-32 h-32 border-8 border-amber-500/20 rounded-full"></div>
+                    <div class="absolute -bottom-12 -right-12 w-32 h-32 border-8 border-amber-500/20 rounded-full"></div>
+
+                    <!-- Certificate Header -->
+                    <div class="flex flex-col items-center mb-6">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 text-3xl shadow-xl mb-3">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <span class="text-xs font-tech font-bold uppercase tracking-widest text-amber-400">INSTITUTO TECNOLÓGICO DE ELETROMECÂNICA</span>
+                        <h2 class="text-3xl lg:text-5xl font-cert font-bold text-amber-100 tracking-wide mt-2">CERTIFICADO DE DESEMPENHO</h2>
+                        <div class="w-32 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent my-4"></div>
+                    </div>
+
+                    <!-- Certificate Body text -->
+                    <p class="text-slate-300 text-sm lg:text-base leading-relaxed mb-6 max-w-2xl mx-auto">
+                        Certificamos para os devidos fins de comprovação acadêmica e técnica que o(a) estudante:
+                    </p>
+
+                    <h3 id="cert-student-name" class="text-2xl lg:text-4xl font-bold font-tech text-blue-400 mb-1">NOME DO ALUNO</h3>
+                    <p id="cert-student-class" class="text-amber-400/90 font-medium text-sm lg:text-base mb-8">Turma: Nome da Turma</p>
+
+                    <p class="text-slate-300 text-sm leading-relaxed mb-8 max-w-2xl mx-auto">
+                        Concluiu com êxito a jornada de gamificação prática em <strong>Eletromecânica Masterclass</strong>, cobrindo 60 desafios nas áreas de Torno, Solda MIG, Circuitos elétricos, Desenho Técnico, Fresadora, PCM e Mapa de Risco.
+                    </p>
+
+                    <!-- Stats Summary Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto bg-slate-950/80 border border-amber-500/30 p-4 rounded-2xl mb-8">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Exercícios</span>
+                            <span id="cert-total-ex" class="font-tech font-bold text-lg text-white">60 / 60</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Precisão</span>
+                            <span id="cert-accuracy" class="font-tech font-bold text-lg text-emerald-400">100%</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Vidas Restantes</span>
+                            <span id="cert-lives-left" class="font-tech font-bold text-lg text-rose-400">10 / 10</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Pontuação Final</span>
+                            <span id="cert-score" class="font-tech font-bold text-lg text-amber-400">1000 pts</span>
+                        </div>
+                    </div>
+
+                    <!-- Signatures / Date -->
+                    <div class="flex flex-col md:flex-row justify-between items-center max-w-2xl mx-auto pt-6 border-t border-slate-800 text-xs text-slate-400 gap-4">
+                        <div>
+                            <span id="cert-date" class="block font-semibold text-slate-300">Data: --/--/----</span>
+                            <span>Emissão Autêntica do Sistema</span>
+                        </div>
+                        <div class="text-center md:text-right">
+                            <span class="block border-t border-slate-600 pt-1 w-48 font-semibold text-slate-300">Coordenação Pedagógica</span>
+                            <span>Simulador Eletromecânica 3D</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Printable Buttons (hidden on print) -->
+                <div class="flex flex-wrap justify-center gap-4 mt-8 no-print">
+                    <button onclick="window.print()" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-tech font-bold rounded-xl shadow-xl transition transform hover:-translate-y-0.5">
+                        <i class="fa-solid fa-print mr-2"></i> IMPRIMIR / BAIXAR PDF
+                    </button>
+                    <button onclick="resetFullGame()" class="px-8 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-tech font-bold rounded-xl shadow-lg transition">
+                        NOVA JORNADA <i class="fa-solid fa-rotate-right ml-2"></i>
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        // Module configuration
+        const modules = [
+            { id: 'torno', name: 'Torno na Prática', icon: 'fa-dharmachakra', count: 8 },
+            { id: 'solda', name: 'Solda MIG', icon: 'fa-fire-flame-curved', count: 9 },
+            { id: 'circuito', name: 'Montagem de Circuito', icon: 'fa-bolt', count: 9 },
+            { id: 'desenho', name: 'Desenho Técnico Básico', icon: 'fa-compass-drafting', count: 9 },
+            { id: 'fresadora', name: 'Fresadora Básico', icon: 'fa-industry', count: 8 },
+            { id: 'pcm', name: 'PCM Básico', icon: 'fa-clipboard-list', count: 9 },
+            { id: 'risco', name: 'Mapa de Risco', icon: 'fa-triangle-exclamation', count: 8 }
+        ];
+
+        // Global State
+        let studentData = { name: '', class: '' };
+        let exercises = [];
+        let currentExerciseIndex = 0;
+        let lives = 10;
+        let correctCount = 0;
+        let totalAttempts = 0;
+        let consecutiveErrors = 0;
+        let currentStreakErrors = 0;
+        let gameState = 'login'; // 'login', 'playing', 'gameover', 'victory'
+
+        // Lifelines state
+        let specialHelpCount = 5;
+        let luckyCardsCount = 3;
+
+        // Exercise Interaction state
+        let selectedMatchingLeft = null;
+        let matchingPairs = {};
+        let mcqSelectedOption = null;
+
+        // Three.js instances
+        let scene, camera, renderer, current3DObject = null, animationFrameId = null;
+        let isDragging3D = false, previousMousePosition = { x: 0, y: 0 };
+
+        // Generate 60 Exercises
+        function generateExercises() {
+            let list = [];
+            let idCounter = 1;
+
+            // 20 Multiple Choice Questions (MCQ)
+            const mcqData = [
+                { mod: 'torno', diff: 'Fácil', q: 'Qual ferramenta é utilizada para realizar o desbaste externo cilíndrico em um torno mecânico convencional?', opts: ['Broca helicoidal', 'Vergalhão de rosca', 'Bits de metal duro / Ferramenta de desbaste', 'Macho manual'], ans: 2, hint: 'Ferramentas de corte monobloco ou com pastilhas afixadas à torre realizam a usinagem externa.' },
+                { mod: 'torno', diff: 'Médio', q: 'O que indica a sigla RPM ao configurar a rotação da árvore (placa) no torneamento?', opts: ['Rotações Por Minuto', 'Resistência Padrão de Mecanização', 'Raio Primário de Manutenção', 'Redução Proporcional do Motor'], ans: 0, hint: 'Indica a quantidade de rotações completas efetuadas pela placa em sessenta segundos.' },
+                { mod: 'solda', diff: 'Fácil', q: 'Na Soldagem MIG/MAG, qual gás é comum como gás de proteção ativo para aços carbono?', opts: ['Hélio puro', 'Dióxido de Carbono (CO2) ou misturas com Argônio', 'Nitrogênio líquido', 'Oxigênio puro'], ans: 1, hint: 'O CO2 ou misturas ativas fornecem excelente proteção contra contaminação atmosférica.' },
+                { mod: 'solda', diff: 'Médio', q: 'Qual parâmetro elétrico na máquina MIG/MAG determina diretamente a taxa de fusão do arame eletrodo?', opts: ['Velocidade do alimentador de arame', 'Resistência ôhmica da tocha', 'Comprimento do bico de contato', 'Frequência da rede'], ans: 0, hint: 'A velocidade de avanço do arame define a amperagem e a taxa de deposição do metal.' },
+                { mod: 'circuito', diff: 'Fácil', q: 'Segundo a Lei de Ohm (V = R * I), se a resistência é de 10 Ohms e a corrente é 2 Amperes, qual a tensão?', opts: ['5 Volts', '12 Volts', '20 Volts', '100 Volts'], ans: 2, hint: 'Multiplique a resistência em ohms pelo valor da corrente elétrica em amperes.' },
+                { mod: 'circuito', diff: 'Alto', q: 'Em um circuito trifásico equilibrado em Estrela (Y), qual é a relação entre a tensão de linha (Vl) e a de fase (Vf)?', opts: ['Vl = Vf', 'Vl = Vf * √3', 'Vl = Vf / √3', 'Vl = 3 * Vf'], ans: 1, hint: 'Em ligação estrela, a tensão entre duas fases é a tensão de fase multiplicada pela raiz de 3.' },
+                { mod: 'desenho', diff: 'Fácil', q: 'Em desenho técnico mecânico, qual linha é representada por traços e pontos alternados?', opts: ['Linha contínua grossa', 'Linha tracejada', 'Linha traço e ponto fina', 'Linha zigue-zague'], ans: 2, hint: 'Linhas traço e ponto indicam eixos de simetria e linhas de centro.' },
+                { mod: 'desenho', diff: 'Médio', q: 'O que representa uma tolerância geométrica de batimento radial em um eixo?', opts: ['O acabamento superficial', 'A variação circular ao girar em relação ao eixo de referência', 'A dureza Rockwell', 'A carga axial máxima'], ans: 1, hint: 'Avalia o desvio de excentricidade durante a rotação completa da peça.' },
+                { mod: 'fresadora', diff: 'Fácil', q: 'Qual característica define o fresamento frontal (faceamento)?', opts: ['Eixo paralelo à superfície', 'Eixo perpendicular à superfície usinada', 'Peça estática sem corte', 'Apenas brocas helicoidais'], ans: 1, hint: 'No faceamento, o eixo de rotação do cabeçote fresador é perpendicular à peça.' },
+                { mod: 'fresadora', diff: 'Médio', q: 'O que significa fresamento em concordância?', opts: ['Sentido de rotação e avanço no mesmo sentido', 'Rotação oposta ao avanço', 'Ausência de fluido de corte', 'Corte sem contato com a peça'], ans: 0, hint: 'A ferramenta entra no material na espessura máxima de cavaco e sai no zero.' },
+                { mod: 'pcm', diff: 'Fácil', q: 'O que significa a sigla PCM na gestão industrial?', opts: ['Planejamento e Controle da Manutenção', 'Produção de Componentes Mecânicos', 'Painel de Controle Motorizado', 'Plano de Custos e Materiais'], ans: 0, hint: 'Setor focado no agendamento de preventivas e gestão de peças e ordens de serviço.' },
+                { mod: 'pcm', diff: 'Alto', q: 'O que mede o indicador MTBF (Mean Time Between Failures)?', opts: ['Tempo médio de reparo', 'Tempo médio entre falhas operacionais', 'Disponibilidade total anual', 'Custo de reposição'], ans: 1, hint: 'Mede o tempo médio em que o equipamento funciona perfeitamente entre duas interrupções.' },
+                { mod: 'risco', diff: 'Fácil', q: 'Qual cor representa o risco FÍSICO (ruído, calor, vibração) em mapas de risco?', opts: ['Vermelho', 'Verde', 'Amarelo', 'Azul'], ans: 1, hint: 'Agentes físicos como ruído e temperatura são identificados pela cor verde.' },
+                { mod: 'risco', diff: 'Médio', q: 'Qual cor do mapa de risco indica riscos QUÍMICOS (poeiras, fumos, vapores)?', opts: ['Vermelho', 'Verde', 'Marrom', 'Azul'], ans: 2, hint: 'Substâncias químicas nocivas são representadas pela cor marrom.' },
+                { mod: 'torno', diff: 'Alto', q: 'Qual mecanismo do torno acopla ao fuso principal para usinar roscas de passos precisos?', opts: ['Caixa de Norton', 'Avanço transversal', 'Contra-ponta', 'Castelo superior'], ans: 0, hint: 'A caixa de engrenagens que seleciona os avanços do fuso de roscar é a Caixa de Norton.' },
+                { mod: 'solda', diff: 'Médio', q: 'Qual defeito de soldagem é a falta de fusão entre a solda e a peça de base?', opts: ['Porosidade', 'Falta de fusão / Colagem', 'Respingos', 'Mordedura'], ans: 1, hint: 'Ocorre quando o aporte térmico é insuficiente para unir os metais.' },
+                { mod: 'circuito', diff: 'Fácil', q: 'Qual dispositivo protege pessoas contra choques ao detectar fugas de corrente à terra?', opts: ['Disjuntor comum', 'Dispositivo Diferencial Residual (DR)', 'Relé térmico', 'Fusível'], ans: 1, hint: 'Compara a corrente entre fase e neutro, desligando se houver fuga.' },
+                { mod: 'desenho', diff: 'Médio', q: 'O que define a projeção em 1º Ângulo (Norma ISO/ABNT)?', opts: ['Objeto entre observador e plano', 'Plano entre observador e objeto', 'Apenas isometria', 'Escala 1:10'], ans: 0, hint: 'A vista lateral esquerda é desenhada à direita da vista frontal.' },
+                { mod: 'fresadora', diff: 'Alto', q: 'Para cálculo de divisão indireta no divisor universal, qual elemento é fundamental?', opts: ['Placa de castanhas', 'Disco divisor com furos calibrados', 'Fuso de esferas', 'Barramento'], ans: 1, hint: 'Utilizam-se círculos de furos do disco divisor para frações de volta.' },
+                { mod: 'pcm', diff: 'Médio', q: 'Qual manutenção utiliza análise de vibração e termografia para prever falhas?', opts: ['Corretiva', 'Preventiva por tempo', 'Preditiva', 'Reformas'], ans: 2, hint: 'Monitora dados físicos para intervir antes da quebra do equipamento.' }
+            ];
+
+            mcqData.forEach((item, idx) => {
+                list.push({
+                    id: idCounter++,
+                    module: item.mod,
+                    type: 'mcq',
+                    difficulty: item.diff,
+                    title: `Múltipla Escolha #${idx + 1} (${item.mod.toUpperCase()})`,
+                    prompt: item.q,
+                    options: item.opts,
+                    answer: item.ans,
+                    hint: item.hint
+                });
+            });
+
+            // 10 Matching Exercises
+            const matchingData = [
+                { mod: 'torno', diff: 'Fácil', title: 'Componentes do Torno', prompt: 'Associe cada componente do torno mecânico à sua função:', pairs: [ { left: 'Placa', right: 'Fixar e girar a peça' }, { left: 'Carro Longitudinal', right: 'Mover ferramenta no sentido axial' }, { left: 'Contra-ponta', right: 'Apoiar peças longas' }, { left: 'Torre', right: 'Alojar ferramentas de corte' } ] },
+                { mod: 'solda', diff: 'Médio', title: 'Variáveis da Solda MIG', prompt: 'Associe os parâmetros de soldagem MIG aos seus efeitos:', pairs: [ { left: 'Tensão (Volts)', right: 'Comprimento e largura do arco' }, { left: 'Velocidade do arame', right: 'Corrente e taxa de deposição' }, { left: 'Vazão de Gás', right: 'Proteção contra oxidação' }, { left: 'Bico de contato', right: 'Conduz corrente ao arame' } ] },
+                { mod: 'circuito', diff: 'Fácil', title: 'Elementos Elétricos', prompt: 'Associe os elementos de comando elétrico às suas funções:', pairs: [ { left: 'Contator', right: 'Chave para acionar cargas' }, { left: 'Relé Térmico', right: 'Proteção contra sobrecarga' }, { left: 'Botão NA', right: 'Fecha contato ao pressionar' }, { left: 'Fusível', right: 'Proteção contra curto-circuito' } ] },
+                { mod: 'desenho', diff: 'Médio', title: 'Linhas de Desenho', prompt: 'Associe os tipos de linhas do desenho técnico:', pairs: [ { left: 'Linha Contínua Grossa', right: 'Contornos visíveis' }, { left: 'Linha Tracejada', right: 'Arestas ocultas' }, { left: 'Linha Traço-Ponto', right: 'Eixos de simetria e centro' }, { left: 'Linha Contínua Fina', right: 'Linhas de cota e hachuras' } ] },
+                { mod: 'fresadora', diff: 'Fácil', title: 'Operações de Fresagem', prompt: 'Associe os conceitos de fresadora:', pairs: [ { left: 'Faceamento', right: 'Usinagem de superfícies planas' }, { left: 'Ranhuramento', right: 'Corte de canais e chavetas' }, { left: 'Velocidade de Corte', right: 'Velocidade periférica da fresa' }, { left: 'Avanço por dente', right: 'Avanço a cada dente da ferramenta' } ] },
+                { mod: 'pcm', diff: 'Médio', title: 'Indicadores do PCM', prompt: 'Associe as siglas aos seus conceitos:', pairs: [ { left: 'MTBF', right: 'Tempo médio entre falhas' }, { left: 'MTTR', right: 'Tempo médio para reparo' }, { left: 'Disponibilidade', right: 'Porcentagem de tempo operacional' }, { left: 'Backlog', right: 'Serviços pendentes acumulados' } ] },
+                { mod: 'risco', diff: 'Fácil', title: 'Cores de Mapa de Risco', prompt: 'Associe a classe de risco à sua cor correspondente:', pairs: [ { left: 'Risco Físico', right: 'Cor Verde' }, { left: 'Risco Químico', right: 'Cor Marrom' }, { left: 'Risco Biológico', right: 'Cor Vermelha' }, { left: 'Risco Ergonômico', right: 'Cor Amarela' } ] },
+                { mod: 'torno', diff: 'Alto', title: 'Elementos de Rosca', prompt: 'Associe os elementos da rosca mecânica:', pairs: [ { left: 'Passo', right: 'Distância entre cristas consecutivas' }, { left: 'Ângulo Métrico', right: '60 graus' }, { left: 'Fundo da Rosca', right: 'Raiz/base do filete' }, { left: 'Diâmetro Nominal', right: 'Diâmetro externo máximo' } ] },
+                { mod: 'solda', diff: 'Alto', title: 'Zonas de Soldagem', prompt: 'Associe as regiões do cordão de solda:', pairs: [ { left: 'Zona Fundida', right: 'Região com fusão total dos metais' }, { left: 'ZAC', right: 'Alterada pelo calor sem fundir' }, { left: 'Metal de Base', right: 'Material original das peças' }, { left: 'Escória', right: 'Camada protetora solidificada' } ] },
+                { mod: 'circuito', diff: 'Médio', title: 'Motores Elétricos', prompt: 'Associe cada tipo de motor ao seu funcionamento:', pairs: [ { left: 'Motor Trifásico', right: 'Campo magnético girante no estator' }, { left: 'Motor de Passo', right: 'Giro angular por pulsos elétricos' }, { left: 'Motor CC', right: 'Comutação por escovas e coletor' }, { left: 'Inversor', right: 'Varia frequência para controlar velocidade' } ] }
+            ];
+
+            matchingData.forEach((item, idx) => {
+                list.push({
+                    id: idCounter++,
+                    module: item.mod,
+                    type: 'matching',
+                    difficulty: item.diff,
+                    title: `Ligar Alternativas #${idx + 1}: ${item.title}`,
+                    prompt: item.prompt,
+                    pairs: item.pairs,
+                    hint: 'Associe corretamente cada termo técnico à sua aplicação técnica em oficina.'
+                });
+            });
+
+            // 10 Drag and Drop Exercises
+            const dragData = [
+                { mod: 'torno', diff: 'Fácil', title: 'Sequência no Torno', prompt: 'Ordene a sequência correta para usinar uma peça cilíndrica:', items: ['1. Fixar a barra na placa e centrar', '2. Facear a extremidade livre', '3. Cilindrar o diâmetro externo', '4. Chanfrar e cortar a peça'] },
+                { mod: 'solda', diff: 'Médio', title: 'Preparação MIG', prompt: 'Ordene a preparação para soldagem MIG:', items: ['1. Limpar óxidos da peça de trabalho', '2. Regular tensão, arame e vazão do gás', '3. Posicionar bico a 15mm da junta', '4. Executar o cordão com velocidade estável'] },
+                { mod: 'circuito', diff: 'Fácil', title: 'Montagem de Partida Direta', prompt: 'Ordene os passos para montar um painel de comando:', items: ['1. Bloquear energia geral (LOTO)', '2. Montar circuito de comando e botoeiras', '3. Fiar o circuito de potência do motor', '4. Testar funcionamento a vazio'] },
+                { mod: 'desenho', diff: 'Médio', title: 'Análise de Desenho', prompt: 'Ordene os passos para interpretar um desenho técnico:', items: ['1. Consultar a legenda e escala', '2. Identificar a vista principal e cortes', '3. Ler as tolerâncias dimensionais', '4. Verificar rugosidade superficial'] },
+                { mod: 'fresadora', diff: 'Fácil', title: 'Fixação em Morsa', prompt: 'Ordene a sequência para fixar uma peça na fresadora:', items: ['1. Limpar a mesa e a morsa', '2. Alinhar a morsa com relógio comparador', '3. Apoiar o bloco em barras paralelas', '4. Apertar e assentar a peça'] },
+                { mod: 'pcm', diff: 'Alto', title: 'Ciclo da Ordem de Serviço', prompt: 'Ordene as etapas da Ordem de Serviço no PCM:', items: ['1. Abertura da solicitação de serviço', '2. Planejamento de recursos e materiais', '3. Programação e execução em campo', '4. Encerramento e análise de causa raiz'] },
+                { mod: 'risco', diff: 'Fácil', title: 'Controle de Riscos', prompt: 'Ordene a hierarquia de proteção em segurança do trabalho:', items: ['1. Eliminação do risco na fonte', '2. Substituição por processo seguro', '3. Proteções coletivas de engenharia', '4. Uso de EPI apropriado'] },
+                { mod: 'torno', diff: 'Médio', title: 'Ajuste da Ferramenta', prompt: 'Ordene a troca de ferramenta no castelo do torno:', items: ['1. Desligar a máquina da rede', '2. Soltar os parafusos da torre', '3. Colocar a ferramenta com calços', '4. Alinhar a ponta na linha de centro'] },
+                { mod: 'solda', diff: 'Alto', title: 'Parâmetros de Penetração', prompt: 'Ordene a regulagem para aumentar a penetração:', items: ['1. Ajustar maior tensão no painel', '2. Reduzir a velocidade de avanço', '3. Manter o bico em distância curta', '4. Usar gás de proteção adequado'] },
+                { mod: 'circuito', diff: 'Médio', title: 'Investigação de Falha', prompt: 'Ordene a busca por defeito em painel desligado:', items: ['1. Isolar o painel com chave geral', '2. Desconectar o motor principal', '3. Testar isolamento com megômetro', '4. Substituir componente em curto'] }
+            ];
+
+            dragData.forEach((item, idx) => {
+                list.push({
+                    id: idCounter++,
+                    module: item.mod,
+                    type: 'dragdrop',
+                    difficulty: item.diff,
+                    title: `Arrastar e Soltar #${idx + 1}: ${item.title}`,
+                    prompt: item.prompt,
+                    items: [...item.items],
+                    hint: 'Considere o fluxo lógico e as normas técnicas de segurança para ordenar.'
+                });
+            });
+
+            // 20 Real Practice in 3D Exercises
+            const sim3dData = [
+                { mod: 'torno', diff: 'Fácil', title: 'Posicionamento do Carro', prompt: 'Ajuste o controle para posicionar a ferramenta a 10mm da peça.', targetVal: 10, unit: 'mm' },
+                { mod: 'torno', diff: 'Médio', title: 'Profundidade de Desbaste', prompt: 'Ajuste o avanço transversal para profundidade de corte de 1.5mm.', targetVal: 1.5, unit: 'mm' },
+                { mod: 'torno', diff: 'Médio', title: 'Ajuste de Rotação (RPM)', prompt: 'Configure a rotação da placa para 1200 RPM.', targetVal: 1200, unit: 'RPM' },
+                { mod: 'torno', diff: 'Alto', title: 'Inclinação da Torre', prompt: 'Incline o carro superior em 30 graus para roscagem.', targetVal: 30, unit: '°' },
+                { mod: 'solda', diff: 'Fácil', title: 'Distância do Bico (Stick-out)', prompt: 'Posicione a tocha a uma distância ideal de 15mm da chapa.', targetVal: 15, unit: 'mm' },
+                { mod: 'solda', diff: 'Médio', title: 'Ângulo da Tocha MIG', prompt: 'Incline a tocha em um ângulo de arraste de 15 graus.', targetVal: 15, unit: '°' },
+                { mod: 'solda', diff: 'Médio', title: 'Corrente de Soldagem', prompt: 'Ajuste a amperagem na máquina MIG para 180 Amperes.', targetVal: 180, unit: 'A' },
+                { mod: 'solda', diff: 'Alto', title: 'Vazão de Gás', prompt: 'Regule o rotâmetro de gás para 15 L/min.', targetVal: 15, unit: 'L/min' },
+                { mod: 'circuito', diff: 'Fácil', title: 'Ajuste do Relé Térmico', prompt: 'Regule o relé de sobrecarga para a corrente do motor de 10 Amperes.', targetVal: 10, unit: 'A' },
+                { mod: 'circuito', diff: 'Médio', title: 'Tensão do Transformador', prompt: 'Regule a saída do transformador para 24 Volts.', targetVal: 24, unit: 'V' },
+                { mod: 'circuito', diff: 'Alto', title: 'Tempo de Comutação', prompt: 'Ajuste o temporizador estrela-triângulo para 5 segundos.', targetVal: 5, unit: 's' },
+                { mod: 'desenho', diff: 'Fácil', title: 'Ajuste Dimensional', prompt: 'Configure o diâmetro nominal do modelo para 50mm.', targetVal: 50, unit: 'mm' },
+                { mod: 'desenho', diff: 'Médio', title: 'Cilindricidade', prompt: 'Defina a tolerância de cilindricidade em 0.05mm.', targetVal: 0.05, unit: 'mm' },
+                { mod: 'fresadora', diff: 'Fácil', title: 'Diâmetro da Fresa', prompt: 'Selecione uma fresa de topo com diâmetro de 20mm.', targetVal: 20, unit: 'mm' },
+                { mod: 'fresadora', diff: 'Médio', title: 'Avanço da Mesa', prompt: 'Regule o avanço da mesa da fresadora para 250 mm/min.', targetVal: 250, unit: 'mm/min' },
+                { mod: 'fresadora', diff: 'Alto', title: 'Profundidade Axial (Ap)', prompt: 'Ajuste a penetração axial de corte para 2.0mm.', targetVal: 2.0, unit: 'mm' },
+                { mod: 'pcm', diff: 'Fácil', title: 'Intervalo de Preventiva', prompt: 'Defina a periodicidade de lubrificação para a cada 30 dias.', targetVal: 30, unit: 'dias' },
+                { mod: 'pcm', diff: 'Médio', title: 'Horas Operacionais', prompt: 'Programar manutenção preventiva a cada 500 horas.', targetVal: 500, unit: 'h' },
+                { mod: 'risco', diff: 'Fácil', title: 'Distância de Cortina de Luz', prompt: 'Ajuste a distância de segurança do sensor para 400mm.', targetVal: 400, unit: 'mm' },
+                { mod: 'risco', diff: 'Médio', title: 'Limite de Ruído (NR-15)', prompt: 'Calibre o alarme do dosímetro para o limite de 85 dB.', targetVal: 85, unit: 'dB' }
+            ];
+
+            sim3dData.forEach((item, idx) => {
+                list.push({
+                    id: idCounter++,
+                    module: item.mod,
+                    type: 'sim3d',
+                    difficulty: item.diff,
+                    title: `Prática 3D #${idx + 1}: ${item.title}`,
+                    prompt: item.prompt,
+                    targetVal: item.targetVal,
+                    unit: item.unit,
+                    hint: `Ajuste o controle deslizante para aproximar o valor do parâmetro exigido (${item.targetVal} ${item.unit}).`
+                });
+            });
+
+            return list;
+        }
+
+        exercises = generateExercises();
+
+        // Mandatory Student Registration
+        function handleRegistration(e) {
+            e.preventDefault();
+            const name = document.getElementById('input-student-name').value.trim();
+            const studentClass = document.getElementById('input-student-class').value.trim();
+
+            if (!name || !studentClass) return;
+
+            studentData.name = name;
+            studentData.class = studentClass;
+
+            document.getElementById('header-student-name').innerText = studentData.name;
+            document.getElementById('header-student-class').innerText = `Turma: ${studentData.class}`;
+            document.getElementById('header-student-info').classList.remove('hidden');
+
+            startGame();
+        }
+
+        // Global Click Outside Detection for Security Reset
+        window.addEventListener('click', (e) => {
+            if (gameState !== 'playing') return;
+            const mainArea = document.getElementById('game-main-area');
+            const header = document.querySelector('header');
+            const modals = [
+                document.getElementById('reset-warning-modal'),
+                document.getElementById('lucky-cards-modal'),
+                document.getElementById('special-help-modal')
+            ];
+
+            // If click inside modals, don't reset
+            for (let m of modals) {
+                if (m && !m.classList.contains('hidden') && m.contains(e.target)) return;
+            }
+
+            if (!mainArea.contains(e.target) && !header.contains(e.target)) {
+                triggerGlobalReset();
+            }
+        });
+
+        function triggerGlobalReset() {
+            document.getElementById('reset-warning-modal').classList.remove('hidden');
+        }
+
+        function dismissResetModal() {
+            document.getElementById('reset-warning-modal').classList.add('hidden');
+            resetFullGame();
+        }
+
+        function confirmRestart() {
+            if (confirm("Deseja realmente reiniciar o simulador do zero? Seus dados permanecerão salvos.")) {
+                resetFullGame();
+            }
+        }
+
+        function resetFullGame() {
+            lives = 10;
+            correctCount = 0;
+            totalAttempts = 0;
+            currentExerciseIndex = 0;
+            consecutiveErrors = 0;
+            currentStreakErrors = 0;
+            specialHelpCount = 5;
+            luckyCardsCount = 3;
+            gameState = studentData.name ? 'playing' : 'login';
+            stop3DScene();
+            renderScreen();
+        }
+
+        function startGame() {
+            lives = 10;
+            correctCount = 0;
+            totalAttempts = 0;
+            currentExerciseIndex = 0;
+            consecutiveErrors = 0;
+            currentStreakErrors = 0;
+            specialHelpCount = 5;
+            luckyCardsCount = 3;
+            gameState = 'playing';
+            renderScreen();
+        }
+
+        // Lifelines Logic
+        function useSpecialHelp() {
+            if (specialHelpCount <= 0) {
+                alert("Você já utilizou todas as 5 ajudas do manual técnico!");
+                return;
+            }
+            specialHelpCount--;
+            updateLifelinesUI();
+
+            const ex = exercises[currentExerciseIndex];
+            document.getElementById('special-help-count').innerText = specialHelpCount;
+            document.getElementById('help-modal-count').innerText = specialHelpCount;
+            document.getElementById('special-help-text').innerText = `Orientação Técnica do Manual:\n\n${ex.hint}`;
+            document.getElementById('special-help-modal').classList.remove('hidden');
+        }
+
+        function closeSpecialHelpModal() {
+            document.getElementById('special-help-modal').classList.add('hidden');
+        }
+
+        function openLuckyModal() {
+            const ex = exercises[currentExerciseIndex];
+            if (ex.type !== 'mcq') {
+                alert("As Cartas da Sorte de eliminação só podem ser usadas em questões de Múltipla Escolha!");
+                return;
+            }
+            if (luckyCardsCount <= 0) {
+                alert("Você já utilizou todas as 3 Cartas da Sorte!");
+                return;
+            }
+
+            // Reset modal state
+            document.getElementById('card-result-box').classList.add('hidden');
+            document.getElementById('close-lucky-btn').classList.add('hidden');
+            for(let i=1; i<=3; i++) {
+                const btn = document.getElementById(`card-btn-${i}`);
+                btn.disabled = false;
+                btn.classList.remove('opacity-40', 'pointer-events-none');
+            }
+
+            document.getElementById('lucky-cards-modal').classList.remove('hidden');
+        }
+
+        function revealLuckyCard(cardNumber) {
+            if (luckyCardsCount <= 0) return;
+            luckyCardsCount--;
+            updateLifelinesUI();
+
+            // Disable all card buttons
+            for(let i=1; i<=3; i++) {
+                document.getElementById(`card-btn-${i}`).disabled = true;
+            }
+
+            const ex = exercises[currentExerciseIndex];
+            const resultBox = document.getElementById('card-result-box');
+            resultBox.classList.remove('hidden');
+
+            // Random luck outcome
+            const rand = Math.random();
+            let elimCount = 0;
+            let luckType = '';
+
+            if (rand < 0.4) {
+                luckType = 'Sorte Alta! 2 Alternativas Incorretas Eliminadas!';
+                elimCount = 2;
+            } else if (rand < 0.8) {
+                luckType = 'Sorte Média! 1 Alternativa Incorreta Eliminada!';
+                elimCount = 1;
+            } else {
+                luckType = 'Carta Coringa: Dica Conceitual Bônus sem eliminação.';
+                elimCount = 0;
+            }
+
+            // Perform elimination on DOM options
+            if (elimCount > 0 && ex.type === 'mcq') {
+                const buttons = document.querySelectorAll('#dynamic-interaction-container button');
+                let eliminated = 0;
+                buttons.forEach((btn, idx) => {
+                    if (idx !== ex.answer && eliminated < elimCount && !btn.disabled) {
+                        btn.disabled = true;
+                        btn.classList.add('opacity-30', 'line-through', 'bg-rose-950/40');
+                        btn.innerHTML += ' <span class="text-rose-400 text-xs font-bold ml-auto">(Eliminada)</span>';
+                        eliminated++;
+                    }
+                });
+            }
+
+            resultBox.innerHTML = `
+                <div class="font-bold text-amber-400 mb-1"><i class="fa-solid fa-star mr-1"></i> ${luckType}</div>
+                <p class="text-xs text-slate-300">${elimCount > 0 ? 'As opções eliminadas foram desabilitadas na sua tela.' : 'Dica Extra: ' + ex.hint}</p>
+            `;
+
+            document.getElementById('close-lucky-btn').classList.remove('hidden');
+        }
+
+        function closeLuckyModal() {
+            document.getElementById('lucky-cards-modal').classList.add('hidden');
+        }
+
+        function updateLifelinesUI() {
+            document.getElementById('badge-special-help-count').innerText = `${specialHelpCount} / 5`;
+            document.getElementById('badge-lucky-cards-count').innerText = `${luckyCardsCount} / 3`;
+
+            const btnHelp = document.getElementById('btn-use-special-help');
+            if (specialHelpCount <= 0) {
+                btnHelp.classList.add('opacity-50');
+            } else {
+                btnHelp.classList.remove('opacity-50');
+            }
+
+            const btnCards = document.getElementById('btn-use-lucky-cards');
+            if (luckyCardsCount <= 0) {
+                btnCards.classList.add('opacity-50');
+            } else {
+                btnCards.classList.remove('opacity-50');
+            }
+        }
+
+        function renderScreen() {
+            // Update Lives UI
+            const livesContainer = document.getElementById('lives-container');
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const icon = document.createElement('i');
+                icon.className = i < lives ? "fa-solid fa-heart text-rose-500 text-sm" : "fa-solid fa-heart text-slate-700 text-sm";
+                livesContainer.appendChild(icon);
+            }
+
+            // Update stats
+            document.getElementById('stat-correct').innerText = correctCount;
+            document.getElementById('stat-streak-errors').innerText = currentStreakErrors;
+            document.getElementById('header-progress').innerText = `${correctCount} / 60`;
+
+            updateLifelinesUI();
+
+            // Screen visibility
+            document.getElementById('screen-login').classList.add('hidden');
+            document.getElementById('screen-exercise').classList.add('hidden');
+            document.getElementById('screen-gameover').classList.add('hidden');
+            document.getElementById('screen-victory').classList.add('hidden');
+
+            if (gameState === 'login') {
+                document.getElementById('screen-login').classList.remove('hidden');
+                stop3DScene();
+            } else if (gameState === 'playing') {
+                document.getElementById('screen-exercise').classList.remove('hidden');
+                loadCurrentExercise();
+            } else if (gameState === 'gameover') {
+                document.getElementById('screen-gameover').classList.remove('hidden');
+                stop3DScene();
+            } else if (gameState === 'victory') {
+                renderCertificate();
+                document.getElementById('screen-victory').classList.remove('hidden');
+                stop3DScene();
+            }
+
+            renderModuleList();
+        }
+
+        function renderModuleList() {
+            const listEl = document.getElementById('module-list');
+            listEl.innerHTML = '';
+            modules.forEach(m => {
+                const isCurrent = gameState === 'playing' && exercises[currentExerciseIndex]?.module === m.id;
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-3 rounded-xl border text-sm transition ${isCurrent ? 'bg-blue-600/20 border-blue-500/50 text-white font-semibold' : 'bg-slate-900/40 border-slate-800 text-slate-400'}`;
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid ${m.icon} ${isCurrent ? 'text-blue-400' : 'text-slate-500'}"></i>
+                        <span>${m.name}</span>
+                    </div>
+                    <span class="text-xs font-tech opacity-60">${m.count} exp</span>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function loadCurrentExercise() {
+            if (currentExerciseIndex >= exercises.length) {
+                gameState = 'victory';
+                renderScreen();
+                return;
+            }
+
+            const ex = exercises[currentExerciseIndex];
+            document.getElementById('badge-module').innerText = modules.find(m => m.id === ex.module)?.name || ex.module;
+            document.getElementById('badge-difficulty').innerText = ex.difficulty;
+            document.getElementById('stat-difficulty').innerText = ex.difficulty;
+            
+            let typeName = 'Múltipla Escolha';
+            if (ex.type === 'matching') typeName = 'Ligar Alternativas';
+            if (ex.type === 'dragdrop') typeName = 'Arrastar e Soltar';
+            if (ex.type === 'sim3d') typeName = 'Prática 3D Real';
+            document.getElementById('badge-type').innerText = typeName;
+
+            document.getElementById('exercise-title').innerText = ex.title;
+            document.getElementById('exercise-counter').innerText = `${currentExerciseIndex + 1} / 60`;
+            document.getElementById('exercise-prompt').innerText = ex.prompt;
+
+            // Reset hint box & feedback
+            document.getElementById('hint-box').classList.add('hidden');
+            document.getElementById('feedback-msg').innerText = '';
+
+            const container = document.getElementById('dynamic-interaction-container');
+            container.innerHTML = '';
+            const submitBtn = document.getElementById('submit-answer-btn');
+            submitBtn.classList.remove('hidden');
+
+            if (ex.type === 'mcq') {
+                mcqSelectedOption = null;
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50');
+
+                const optsDiv = document.createElement('div');
+                optsDiv.className = 'space-y-3';
+                ex.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-4 rounded-xl bg-slate-800/60 border border-slate-700/60 hover:bg-slate-800 hover:border-blue-500/50 text-slate-200 text-sm transition flex items-center space-x-3';
+                    btn.innerHTML = `
+                        <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center font-tech text-xs text-slate-400">${String.fromCharCode(65 + idx)}</span>
+                        <span class="flex-1">${opt}</span>
+                    `;
+                    btn.onclick = () => {
+                        if (btn.disabled) return;
+                        document.querySelectorAll('#dynamic-interaction-container button').forEach(b => {
+                            if(!b.disabled) b.classList.remove('border-blue-500', 'bg-blue-600/20');
+                        });
+                        btn.classList.add('border-blue-500', 'bg-blue-600/20');
+                        mcqSelectedOption = idx;
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50');
+                    };
+                    optsDiv.appendChild(btn);
+                });
+                container.appendChild(optsDiv);
+            } 
+            else if (ex.type === 'matching') {
+                selectedMatchingLeft = null;
+                matchingPairs = {};
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50');
+
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+
+                const leftCol = document.createElement('div');
+                leftCol.className = 'space-y-2';
+                leftCol.innerHTML = '<h4 class="text-xs font-bold text-slate-400 uppercase">Termos</h4>';
+                
+                const rightCol = document.createElement('div');
+                rightCol.className = 'space-y-2';
+                rightCol.innerHTML = '<h4 class="text-xs font-bold text-slate-400 uppercase">Definições</h4>';
+
+                let shuffledRight = ex.pairs.map((p, i) => ({ text: p.right, origIndex: i })).sort(() => Math.random() - 0.5);
+
+                ex.pairs.forEach((pair, lIdx) => {
+                    const lBtn = document.createElement('button');
+                    lBtn.className = 'matching-left w-full text-left p-3 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-blue-500 text-sm text-slate-200 transition flex justify-between items-center';
+                    lBtn.innerHTML = `<span>${pair.left}</span> <i class="fa-solid fa-circle text-xs text-slate-600" id="l-dot-${lIdx}"></i>`;
+                    lBtn.onclick = () => {
+                        document.querySelectorAll('.matching-left').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-600/20'));
+                        lBtn.classList.add('border-blue-500', 'bg-blue-600/20');
+                        selectedMatchingLeft = lIdx;
+                    };
+                    leftCol.appendChild(lBtn);
+                });
+
+                shuffledRight.forEach((item, rIdx) => {
+                    const rBtn = document.createElement('button');
+                    rBtn.className = 'w-full text-left p-3 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-emerald-500 text-sm text-slate-200 transition flex justify-between items-center';
+                    rBtn.innerHTML = `<i class="fa-solid fa-circle text-xs text-slate-600 mr-2" id="r-dot-${item.origIndex}"></i> <span class="flex-1">${item.text}</span>`;
+                    rBtn.onclick = () => {
+                        if (selectedMatchingLeft !== null) {
+                            matchingPairs[selectedMatchingLeft] = item.origIndex;
+                            document.getElementById(`l-dot-${selectedMatchingLeft}`).className = 'fa-solid fa-check text-xs text-blue-400';
+                            document.getElementById(`r-dot-${item.origIndex}`).className = 'fa-solid fa-check text-xs text-emerald-400';
+                            rBtn.classList.add('border-emerald-500', 'bg-emerald-600/20');
+                            selectedMatchingLeft = null;
+
+                            if (Object.keys(matchingPairs).length === ex.pairs.length) {
+                                submitBtn.disabled = false;
+                                submitBtn.classList.remove('opacity-50');
+                            }
+                        }
+                    };
+                    rightCol.appendChild(rBtn);
+                });
+
+                grid.appendChild(leftCol);
+                grid.appendChild(rightCol);
+                container.appendChild(grid);
+            }
+            else if (ex.type === 'dragdrop') {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50');
+
+                let shuffledItems = [...ex.items].sort(() => Math.random() - 0.5);
+                const listDiv = document.createElement('div');
+                listDiv.className = 'space-y-2';
+                listDiv.innerHTML = '<p class="text-xs text-slate-400 mb-2"><i class="fa-solid fa-up-down text-blue-500 mr-1"></i> Ordene a sequência correta usando as setas laterais:</p>';
+
+                shuffledItems.forEach((itemText) => {
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'drag-item p-3.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 flex items-center justify-between shadow-md hover:border-blue-500 transition';
+                    itemCard.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-grip-vertical text-slate-500"></i>
+                            <span class="item-text">${itemText}</span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="moveItemUp(this)" class="p-1 text-slate-400 hover:text-white"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button onclick="moveItemDown(this)" class="p-1 text-slate-400 hover:text-white"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                    `;
+                    listDiv.appendChild(itemCard);
+                });
+                container.appendChild(listDiv);
+            }
+            else if (ex.type === 'sim3d') {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50');
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'space-y-4';
+                wrapper.innerHTML = `
+                    <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-semibold text-slate-300">Ajuste de Parâmetro Simulado:</span>
+                            <span id="slider-value-display" class="font-tech font-bold text-blue-400 text-lg">0 ${ex.unit}</span>
+                        </div>
+                        <input type="range" id="sim-slider" min="0" max="${ex.targetVal * 2}" step="${ex.targetVal > 10 ? 1 : 0.01}" value="0" class="w-full accent-blue-500 cursor-pointer" oninput="updateSimSlider(this.value)">
+                    </div>
+                `;
+                container.appendChild(wrapper);
+
+                setTimeout(() => {
+                    const slider = document.getElementById('sim-slider');
+                    if(slider) updateSimSlider(slider.value);
+                }, 50);
+            }
+
+            init3DScene(ex.module, ex.type);
+        }
+
+        function updateSimSlider(val) {
+            document.getElementById('slider-value-display').innerText = `${val} ${exercises[currentExerciseIndex].unit}`;
+            if (current3DObject) {
+                let ratio = parseFloat(val) / (exercises[currentExerciseIndex].targetVal * 2 || 1);
+                current3DObject.rotation.y = ratio * Math.PI * 2;
+                current3DObject.scale.set(0.8 + ratio * 0.4, 0.8 + ratio * 0.4, 0.8 + ratio * 0.4);
+            }
+        }
+
+        function moveItemUp(btn) {
+            const card = btn.closest('.drag-item');
+            const prev = card.previousElementSibling;
+            if (prev && prev.classList.contains('drag-item')) {
+                card.parentNode.insertBefore(card, prev);
+            }
+        }
+
+        function moveItemDown(btn) {
+            const card = btn.closest('.drag-item');
+            const next = card.nextElementSibling;
+            if (next && next.classList.contains('drag-item')) {
+                card.parentNode.insertBefore(next, card);
+            }
+        }
+
+        // Three.js Simulation Engine
+        function init3DScene(moduleName, type) {
+            stop3DScene();
+            const container = document.getElementById('canvas-container');
+            container.innerHTML = '';
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 3, 6);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const group = new THREE.Group();
+
+            if (moduleName === 'torno') {
+                const bedGeo = new THREE.BoxGeometry(4, 0.4, 1.2);
+                const bedMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
+                const bed = new THREE.Mesh(bedGeo, bedMat);
+                group.add(bed);
+
+                const chuckGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.5, 32);
+                const chuckMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
+                const chuck = new THREE.Mesh(chuckGeo, chuckMat);
+                chuck.rotation.x = Math.PI / 2;
+                chuck.position.set(-1.5, 0.5, 0);
+                group.add(chuck);
+
+                const workGeo = new THREE.CylinderGeometry(0.4, 0.4, 2.2, 32);
+                const workMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.2 });
+                const workpiece = new THREE.Mesh(workGeo, workMat);
+                workpiece.rotation.z = Math.PI / 2;
+                workpiece.position.set(0, 0.5, 0);
+                group.add(workpiece);
+                current3DObject = workpiece;
+            } 
+            else if (moduleName === 'solda') {
+                const plateGeo = new THREE.BoxGeometry(3, 0.2, 1.5);
+                const plateMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.6 });
+                const plate1 = new THREE.Mesh(plateGeo, plateMat);
+                plate1.position.set(0, -0.5, -0.8);
+                const plate2 = new THREE.Mesh(plateGeo, plateMat);
+                plate2.position.set(0, -0.5, 0.8);
+                group.add(plate1);
+                group.add(plate2);
+
+                const torchGeo = new THREE.ConeGeometry(0.3, 1.2, 16);
+                const torchMat = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.8 });
+                const torch = new THREE.Mesh(torchGeo, torchMat);
+                torch.position.set(0, 1, 0);
+                torch.rotation.z = Math.PI / 6;
+                group.add(torch);
+                current3DObject = torch;
+            }
+            else if (moduleName === 'circuito') {
+                const boxGeo = new THREE.BoxGeometry(2.5, 2.5, 0.8);
+                const boxMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3 });
+                const box = new THREE.Mesh(boxGeo, boxMat);
+                group.add(box);
+
+                const btnGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.2, 32);
+                const greenMat = new THREE.MeshStandardMaterial({ color: 0x22c55e });
+                const redMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+                
+                const btn1 = new THREE.Mesh(btnGeo, greenMat);
+                btn1.rotation.x = Math.PI / 2;
+                btn1.position.set(-0.6, 0.5, 0.45);
+                group.add(btn1);
+
+                const btn2 = new THREE.Mesh(btnGeo, redMat);
+                btn2.rotation.x = Math.PI / 2;
+                btn2.position.set(0.6, 0.5, 0.45);
+                group.add(btn2);
+                current3DObject = box;
+            }
+            else {
+                const geo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.4, metalness: 0.6 });
+                const cube = new THREE.Mesh(geo, mat);
+                group.add(cube);
+                current3DObject = cube;
+            }
+
+            scene.add(group);
+
+            const dom = renderer.domElement;
+            dom.onmousedown = (e) => { isDragging3D = true; previousMousePosition = { x: e.clientX, y: e.clientY }; };
+            dom.onmousemove = (e) => {
+                if (!isDragging3D || !current3DObject) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                group.rotation.y += deltaX * 0.01;
+                group.rotation.x += deltaY * 0.01;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            };
+            window.onmouseup = () => { isDragging3D = false; };
+
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                if (current3DObject && !isDragging3D && type !== 'sim3d') {
+                    current3DObject.rotation.y += 0.005;
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function stop3DScene() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (renderer && renderer.domElement) {
+                renderer.dispose();
+            }
+        }
+
+        // Check Answer & Advance
+        function checkAnswer() {
+            const ex = exercises[currentExerciseIndex];
+            let isCorrect = false;
+            totalAttempts++;
+
+            if (ex.type === 'mcq') {
+                if (mcqSelectedOption === ex.answer) isCorrect = true;
+            } 
+            else if (ex.type === 'matching') {
+                let allMatch = true;
+                ex.pairs.forEach((p, lIdx) => {
+                    if (matchingPairs[lIdx] !== lIdx) allMatch = false;
+                });
+                if (allMatch && Object.keys(matchingPairs).length === ex.pairs.length) isCorrect = true;
+            }
+            else if (ex.type === 'dragdrop') {
+                const currentCards = document.querySelectorAll('.drag-item .item-text');
+                let orderedCorrectly = true;
+                currentCards.forEach((card, idx) => {
+                    if (card.innerText !== ex.items[idx]) orderedCorrectly = false;
+                });
+                if (orderedCorrectly) isCorrect = true;
+            }
+            else if (ex.type === 'sim3d') {
+                const sliderVal = parseFloat(document.getElementById('sim-slider').value);
+                const margin = Math.max(ex.targetVal * 0.15, 0.5);
+                if (Math.abs(sliderVal - ex.targetVal) <= margin) isCorrect = true;
+            }
+
+            const feedbackEl = document.getElementById('feedback-msg');
+
+            if (isCorrect) {
+                feedbackEl.innerHTML = `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> Resposta Correta!</span>`;
+                correctCount++;
+                consecutiveErrors = 0;
+                currentStreakErrors = 0;
+                setTimeout(() => {
+                    currentExerciseIndex++;
+                    renderScreen();
+                }, 1000);
+            } else {
+                lives--;
+                consecutiveErrors++;
+                currentStreakErrors++;
+                feedbackEl.innerHTML = `<span class="text-rose-400 font-bold"><i class="fa-solid fa-circle-xmark mr-1"></i> Incorreto! (-1 Vida)</span>`;
+                
+                renderScreen();
+
+                if (lives <= 0) {
+                    gameState = 'gameover';
+                    setTimeout(() => renderScreen(), 1000);
+                    return;
+                }
+
+                if (consecutiveErrors >= 2) {
+                    const hintBox = document.getElementById('hint-box');
+                    const hintText = document.getElementById('hint-text');
+                    hintText.innerText = ex.hint;
+                    hintBox.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Render Certificate
+        function renderCertificate() {
+            document.getElementById('cert-student-name').innerText = studentData.name.toUpperCase();
+            document.getElementById('cert-student-class').innerText = `Turma / Módulo: ${studentData.class}`;
+            document.getElementById('cert-total-ex').innerText = `${correctCount} / 60`;
+            
+            const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 100;
+            document.getElementById('cert-accuracy').innerText = `${accuracy}%`;
+            document.getElementById('cert-lives-left').innerText = `${lives} / 10`;
+
+            const score = (correctCount * 15) + (lives * 10);
+            document.getElementById('cert-score').innerText = `${score} pts`;
+
+            const now = new Date();
+            document.getElementById('cert-date').innerText = `Data: ${now.toLocaleDateString('pt-BR')}`;
+        }
+
+        window.onload = function() {
+            renderScreen();
+        };
+    </script>
+</body>
+</html>
